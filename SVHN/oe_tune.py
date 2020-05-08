@@ -58,9 +58,9 @@ np.random.seed(1)
 
 
 train_data_in = svhn.SVHN('./SVHN', split='train_and_extra',
-                          transform=trn.ToTensor(), download=False)
+                          transform=trn.ToTensor(), download=True)
 test_data = svhn.SVHN('./SVHN', split='test',
-                      transform=trn.ToTensor(), download=False)
+                      transform=trn.ToTensor(), download=True)
 num_classes = 10
 
 calib_indicator = ''
