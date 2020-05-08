@@ -57,9 +57,9 @@ torch.manual_seed(1)
 np.random.seed(1)
 
 
-train_data_in = svhn.SVHN('./SVHN', split='train_and_extra',
+train_data_in = svhn.SVHN('./svhn', split='train_and_extra',
                           transform=trn.ToTensor(), download=True)
-test_data = svhn.SVHN('./SVHN', split='test',
+test_data = svhn.SVHN('./svhn', split='test',
                       transform=trn.ToTensor(), download=True)
 num_classes = 10
 
