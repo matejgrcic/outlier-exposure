@@ -162,7 +162,7 @@ def train():
 
     # start at a random point of the outlier dataset; this induces more randomness without obliterating locality
     train_loader_out.dataset.offset = np.random.randint(len(train_loader_out.dataset))
-    with tqdm(total=len(train_loader_in.dataset) + len(train_loader_out.dataset)) as progress_bar:
+    with tqdm(total=len(train_loader_in.dataset)) as progress_bar:
         for in_set, out_set in zip(train_loader_in, train_loader_out):
             data = torch.cat((in_set[0], out_set[0]), 0)
             target = in_set[1]
@@ -185,7 +185,7 @@ def train():
 
             # exponential moving average
             loss_avg = loss_avg * 0.8 + float(loss) * 0.2
-            progress_bar.update(x.size(0))
+            progress_bar.update(args.batch_size)
 
     state['train_loss'] = loss_avg
 
