@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from models.allconv import AllConvNet
 from models.wrn import WideResNet
+from models.densenet import DenseNet
 
 if __package__ is None:
     import sys
@@ -27,7 +28,7 @@ parser = argparse.ArgumentParser(description='Tunes a CIFAR Classifier with OE',
 parser.add_argument('dataset', type=str, choices=['cifar10', 'cifar100'],
                     help='Choose between CIFAR-10, CIFAR-100.')
 parser.add_argument('--model', '-m', type=str, default='allconv',
-                    choices=['allconv', 'wrn'], help='Choose architecture.')
+                    choices=['allconv', 'wrn', 'dense'], help='Choose architecture.')
 parser.add_argument('--calibration', '-c', action='store_true',
                     help='Train a model to be used for calibration. This holds out some data for validation.')
 # Optimization options
@@ -66,12 +67,12 @@ train_transform = trn.Compose([trn.RandomHorizontalFlip(), trn.RandomCrop(32, pa
 test_transform = trn.Compose([trn.ToTensor(), trn.Normalize(mean, std)])
 
 if args.dataset == 'cifar10':
-    train_data_in = dset.CIFAR10('/share/data/vision-greg/cifarpy', train=True, transform=train_transform)
-    test_data = dset.CIFAR10('/share/data/vision-greg/cifarpy', train=False, transform=test_transform)
+    train_data_in = dset.CIFAR10('./cifarpy', train=True, download=True, transform=train_transform)
+    test_data = dset.CIFAR10('./cifarpy', train=False, download=True, transform=test_transform)
     num_classes = 10
 else:
-    train_data_in = dset.CIFAR100('/share/data/vision-greg/cifarpy', train=True, transform=train_transform)
-    test_data = dset.CIFAR100('/share/data/vision-greg/cifarpy', train=False, transform=test_transform)
+    train_data_in = dset.CIFAR100('./cifarpy', train=True, download=True, transform=train_transform)
+    test_data = dset.CIFAR100('./cifarpy', train=False, download=True, transform=test_transform)
     num_classes = 100
 
 
@@ -103,22 +104,27 @@ test_loader = torch.utils.data.DataLoader(
 # Create model
 if args.model == 'allconv':
     net = AllConvNet(num_classes)
-else:
+elif args.model == 'wrn':
     net = WideResNet(args.layers, num_classes, args.widen_factor, dropRate=args.droprate)
+else:
+    net = DenseNet(growth_rate=48, drop_rate=0.2, block_config=(6, 6, 6), num_init_features=96)
 
 # Restore model
-model_found = False
+# model_found = False
+# if args.load != '':
+#     for i in range(1000 - 1, -1, -1):
+#         model_name = os.path.join(args.load, args.dataset + calib_indicator + '_' + args.model +
+#                                   '_baseline_epoch_' + str(i) + '.pt')
+#         if os.path.isfile(model_name):
+#             net.load_state_dict(torch.load(model_name))
+#             print('Model restored! Epoch:', i)
+#             model_found = True
+#             break
+#     if not model_found:
+#         assert False, "could not find model to restore"
+
 if args.load != '':
-    for i in range(1000 - 1, -1, -1):
-        model_name = os.path.join(args.load, args.dataset + calib_indicator + '_' + args.model +
-                                  '_baseline_epoch_' + str(i) + '.pt')
-        if os.path.isfile(model_name):
-            net.load_state_dict(torch.load(model_name))
-            print('Model restored! Epoch:', i)
-            model_found = True
-            break
-    if not model_found:
-        assert False, "could not find model to restore"
+    net.load_state_dict(torch.load(model_name))
 
 if args.ngpu > 1:
     net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
