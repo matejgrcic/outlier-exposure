@@ -247,7 +247,7 @@ for epoch in range(0, args.epochs):
     # Let us not waste space and delete the previous model
     prev_path = os.path.join(args.save, args.dataset + calib_indicator + '_' + args.model +
                              '_oe_tune_epoch_' + str(epoch - 1) + '.pt')
-    if os.path.exists(prev_path): os.remove(prev_path)
+    # if os.path.exists(prev_path): os.remove(prev_path)
 
     # Show results
 
