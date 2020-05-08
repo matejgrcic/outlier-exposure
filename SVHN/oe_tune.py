@@ -57,10 +57,8 @@ torch.manual_seed(1)
 np.random.seed(1)
 
 
-train_data_in = svhn.SVHN('./svhn', split='train_and_extra',
-                          transform=trn.ToTensor(), download=True)
-test_data = svhn.SVHN('./svhn', split='test',
-                      transform=trn.ToTensor(), download=True)
+train_data_in = svhn.SVHN('./cifarpy', split='train', download=True, transform=trn.ToTensor())
+test_data = svhn.SVHN('./cifarpy', split='test',  download=True, transform=trn.ToTensor())
 num_classes = 10
 
 calib_indicator = ''
