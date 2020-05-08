@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from models.allconv import AllConvNet
 from models.wrn import WideResNet
+from models.densenet import DenseNet
 
 if __package__ is None:
     import sys
@@ -24,8 +25,8 @@ if __package__ is None:
 
 parser = argparse.ArgumentParser(description='Tunes an SVHN Classifier with OE',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--model', '-m', type=str, default='allconv',
-                    choices=['allconv', 'wrn'], help='Choose architecture.')
+parser.add_argument('--model', '-m', type=str, default='dense',
+                    choices=['allconv', 'wrn', 'dense'], help='Choose architecture.')
 parser.add_argument('--calibration', '-c', action='store_true',
                     help='Train a model to be used for calibration. This holds out some data for validation.')
 # Optimization options
@@ -90,22 +91,29 @@ test_loader = torch.utils.data.DataLoader(
 # Create model
 if args.model == 'allconv':
     net = AllConvNet(num_classes)
+elif args.model == 'wrn':
+    net = WideResNet(args.layers, num_classes, args.widen_factor,
+                     dropRate=args.droprate)
 else:
-    net = WideResNet(args.layers, num_classes, args.widen_factor, dropRate=args.droprate)
+    net = DenseNet(growth_rate=48, drop_rate=0.2, block_config=(6, 6, 6),
+                   num_init_features=96)
 
 
 # Restore model
-model_found = False
+# model_found = False
+# if args.load != '':
+#     for i in range(1000 - 1, -1, -1):
+#         model_name = os.path.join(args.load, calib_indicator + args.model + '_baseline_epoch_' + str(i) + '.pt')
+#         if os.path.isfile(model_name):
+#             net.load_state_dict(torch.load(model_name))
+#             print('Model restored! Epoch:', i)
+#             model_found = True
+#             break
+#     if not model_found:
+#         assert False, "could not find model to restore"
+
 if args.load != '':
-    for i in range(1000 - 1, -1, -1):
-        model_name = os.path.join(args.load, calib_indicator + args.model + '_baseline_epoch_' + str(i) + '.pt')
-        if os.path.isfile(model_name):
-            net.load_state_dict(torch.load(model_name))
-            print('Model restored! Epoch:', i)
-            model_found = True
-            break
-    if not model_found:
-        assert False, "could not find model to restore"
+    net.load_state_dict(torch.load(args.load))
 
 if args.ngpu > 1:
     net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
