@@ -124,7 +124,7 @@ else:
 #         assert False, "could not find model to restore"
 
 if args.load != '':
-    net.load_state_dict(torch.load(model_name))
+    net.load_state_dict(torch.load(args.load))
 
 if args.ngpu > 1:
     net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
