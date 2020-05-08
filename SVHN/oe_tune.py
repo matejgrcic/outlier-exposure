@@ -148,28 +148,30 @@ def train():
 
     # start at a random point of the outlier dataset; this induces more randomness without destroying locality
     train_loader_out.dataset.offset = np.random.randint(len(train_loader_out.dataset))
-    for in_set, out_set in zip(train_loader_in, train_loader_out):
-        data = torch.cat((in_set[0], out_set[0]), 0)
-        target = in_set[1].long()
+    with tqdm(total=len(train_loader_in.dataset)) as progress_bar:
+        for in_set, out_set in zip(train_loader_in, train_loader_out):
+            data = torch.cat((in_set[0], out_set[0]), 0)
+            target = in_set[1].long()
 
-        data, target = data.cuda(), target.long().cuda()
+            data, target = data.cuda(), target.long().cuda()
 
-        # forward
-        x = net(data)
+            # forward
+            x = net(data)
 
-        # backward
-        scheduler.step()
-        optimizer.zero_grad()
+            # backward
+            scheduler.step()
+            optimizer.zero_grad()
 
-        loss = F.cross_entropy(x[:len(in_set[0])], target)
-        # cross-entropy from softmax distribution to uniform distribution
-        loss += 0.5 * -(x[len(in_set[0]):].mean(1) - torch.logsumexp(x[len(in_set[0]):], dim=1)).mean()
+            loss = F.cross_entropy(x[:len(in_set[0])], target)
+            # cross-entropy from softmax distribution to uniform distribution
+            loss += 0.5 * -(x[len(in_set[0]):].mean(1) - torch.logsumexp(x[len(in_set[0]):], dim=1)).mean()
 
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
 
-        # exponential moving average
-        loss_avg = loss_avg * 0.8 + float(loss) * 0.2
+            # exponential moving average
+            loss_avg = loss_avg * 0.8 + float(loss) * 0.2
+            progress_bar.update(args.batch_size)
 
     state['train_loss'] = loss_avg
 
